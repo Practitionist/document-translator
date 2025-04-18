@@ -21,12 +21,35 @@ async function streamToBuffer(stream: Readable): Promise<Buffer> {
 async function translateWithOpenRouter(
   text: string,
   sourceLanguage: string, // e.g., "Spanish", "French", "auto"
+  destinationLanguage: string = 'en', // Default to English if not specified
   apiKey: string,
   model: string = 'google/gemini-2.5-pro-preview-03-25' // Updated default model
 ): Promise<string> {
+  // Get destination language name
+  const getLanguageName = (code: string): string => {
+    const languages: {[key: string]: string} = {
+      'en': 'English',
+      'hi': 'Hindi',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'zh': 'Chinese',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'ar': 'Arabic'
+    };
+    return languages[code] || code;
+  };
+
+  const sourceLangName = sourceLanguage === 'auto' ? 'the detected language' : getLanguageName(sourceLanguage);
+  const destLangName = getLanguageName(destinationLanguage);
+
   const languageInstruction = sourceLanguage === 'auto'
-    ? 'Detect the language of the following text and translate it accurately to English:'
-    : `Translate the following text from ${sourceLanguage} to English:`;
+    ? `Detect the language of the following text and translate it accurately to ${destLangName}:`
+    : `Translate the following text from ${sourceLangName} to ${destLangName}:`;
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -38,7 +61,7 @@ async function translateWithOpenRouter(
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: "system", content: "You are a helpful translation assistant. Translate the user's text to English accurately. Preserve the original meaning and tone as much as possible. Only output the translated text, nothing else." },
+          { role: "system", content: `You are a helpful translation assistant. Translate the user's text to ${destLangName} accurately. Preserve the original meaning and tone as much as possible. Only output the translated text, nothing else.` },
           { role: "user", content: `${languageInstruction}\n\n${text}` }
         ]
       })
@@ -79,6 +102,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const sourceLanguage = formData.get('sourceLanguage') as string | null;
+    const destinationLanguage = formData.get('destinationLanguage') as string || 'en';
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
@@ -128,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Translation ---
-    const translatedText = await translateWithOpenRouter(extractedText, sourceLanguage, openRouterApiKey);
+    const translatedText = await translateWithOpenRouter(extractedText, sourceLanguage, destinationLanguage, openRouterApiKey);
 
     return NextResponse.json({ translatedText });
 

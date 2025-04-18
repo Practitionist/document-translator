@@ -10,10 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 
+// Helper function to get display name for language code
+const getLanguageName = (code: string): string => {
+  const languages: { [key: string]: string } = {
+    'en': 'English',
+    'hi': 'Hindi',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'ar': 'Arabic'
+  };
+  return languages[code] || code; // Fallback to code if name not found
+};
+
 export default function TranslatePage() {
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
   const [sourceLanguage, setSourceLanguage] = useState<string>("")
+  const [destinationLanguage, setDestinationLanguage] = useState<string>("en")
   const [isTranslating, setIsTranslating] = useState<boolean>(false)
   const [translatedText, setTranslatedText] = useState<string>("")
 
@@ -35,8 +55,17 @@ export default function TranslatePage() {
 
     if (!sourceLanguage) {
       toast({
-        title: "No language selected",
+        title: "No source language selected",
         description: "Please select the source language.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!destinationLanguage) {
+      toast({
+        title: "No destination language selected",
+        description: "Please select the destination language.",
         variant: "destructive",
       })
       return
@@ -48,6 +77,7 @@ export default function TranslatePage() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('sourceLanguage', sourceLanguage);
+    formData.append('destinationLanguage', destinationLanguage);
 
     try {
       const response = await fetch('/api/translate', {
@@ -64,7 +94,7 @@ export default function TranslatePage() {
       setTranslatedText(result.translatedText);
       toast({
         title: "Translation complete",
-        description: "Your document has been successfully translated to English.",
+        description: `Your document has been successfully translated to ${destinationLanguage === 'en' ? 'English' : destinationLanguage === 'hi' ? 'Hindi' : 'the selected language'}.`,
       });
 
     } catch (error) {
@@ -177,6 +207,34 @@ export default function TranslatePage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="grid w-full gap-2">
+                    <label
+                      htmlFor="destination-language"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Destination Language
+                    </label>
+                    <Select value={destinationLanguage} onValueChange={setDestinationLanguage}>
+                      <SelectTrigger id="destination-language">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="hi">Hindi</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                        <SelectItem value="it">Italian</SelectItem>
+                        <SelectItem value="pt">Portuguese</SelectItem>
+                        <SelectItem value="ru">Russian</SelectItem>
+                        <SelectItem value="zh">Chinese</SelectItem>
+                        <SelectItem value="ja">Japanese</SelectItem>
+                        <SelectItem value="ko">Korean</SelectItem>
+                        <SelectItem value="ar">Arabic</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardContent>
                 <CardFooter>
                   <Button onClick={handleTranslate} disabled={isTranslating} className="w-full">
@@ -186,7 +244,7 @@ export default function TranslatePage() {
                         Translating...
                       </>
                     ) : (
-                      "Translate to English"
+                      `Translate to ${getLanguageName(destinationLanguage)}`
                     )}
                   </Button>
                 </CardFooter>
@@ -195,7 +253,13 @@ export default function TranslatePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Translation Result</CardTitle>
-                  <CardDescription>The English translation of your document will appear here.</CardDescription>
+                  <CardDescription>
+                    {destinationLanguage === 'en' 
+                      ? 'The English translation of your document will appear here.'
+                      : destinationLanguage === 'hi'
+                      ? 'The Hindi translation of your document will appear here.'
+                      : 'The translation of your document will appear here.'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Textarea
