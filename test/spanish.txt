@@ -1,0 +1,5 @@
+Hola Mundo.
+Este es un documento de ejemplo escrito en español.
+La traducción automática ha mejorado mucho en los últimos años.
+Esperamos que esta herramienta sea útil para sus necesidades.
+¡Que tengas un buen día!
